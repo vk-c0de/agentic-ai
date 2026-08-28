@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multi-Agentic Application with LLM as Supervisor – Hands-on Guide</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #eef2ff 0, #f9fafb 40%, #fdf2ff 100%);
+      color: #111827;
+    }
+    main {
+      max-width: 960px;
+      margin: 2rem auto 3rem;
+      padding: 2.5rem 2rem 3rem;
+      background-color: #ffffff;
+      border-radius: 16px;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(148, 163, 184, 0.12);
+    }
+    h1 {
+      font-size: 2.2rem;
+      margin: 0 0 1.25rem;
+      letter-spacing: -0.03em;
+      text-align: center;
+      color: #0f172a;
+      padding: 1rem 1.5rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.12),
+        0 0 0 1px rgba(148, 163, 184, 0.35);
+    }
+    h2 {
+      font-size: 1.6rem;
+      margin-top: 2.25rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(37, 99, 235, 0.18);
+      padding-bottom: 0.35rem;
+      color: #0f172a;
+    }
+    h3 {
+      font-size: 1.25rem;
+      margin-top: 1.75rem;
+      color: #0f172a;
+    }
+    p {
+      margin: 0.5rem 0 0.75rem;
+    }
+    code {
+      font-family: "Fira Code", Menlo, Monaco, Consolas, "Courier New", monospace;
+      background-color: #f3f4ff;
+      padding: 0.12rem 0.3rem;
+      border-radius: 4px;
+      font-size: 0.95em;
+      color: #1d4ed8;
+    }
+    pre {
+      background: linear-gradient(145deg, #020617, #020617 50%, #0b1120);
+      color: #e5e7eb;
+      padding: 1rem 1.1rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      margin: 0.75rem 0 1.5rem;
+      border: 1px solid rgba(15, 23, 42, 0.6);
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+    .note, .exercise {
+      padding: 0.9rem 1.1rem;
+      margin: 1rem 0 1.5rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      border: 1px solid transparent;
+    }
+    .note {
+      border-left: 4px solid #2563eb;
+      background: radial-gradient(circle at top left, #eff6ff 0, #e0f2fe 45%, #eef2ff 100%);
+      border-color: rgba(37, 99, 235, 0.4);
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(191, 219, 254, 0.9);
+    }
+    .exercise {
+      border-left: 4px solid #16a34a;
+      background: linear-gradient(135deg, #ecfdf3, #f0fdf4);
+      border-color: rgba(22, 163, 74, 0.4);
+    }
+    .exercise-title {
+      font-weight: 650;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.8rem;
+      color: #166534;
+    }
+    ol, ul {
+      padding-left: 1.4rem;
+    }
+    li {
+      margin: 0.25rem 0;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Multi-Agentic Application with LLM as Supervisor – Hands-on Guide</h1>
+
+  <div class="note">
+    <strong>How to use this guide</strong>
+    <ol>
+      <li>Open your code editor (VS Code / Cursor / Jupyter / any IDE) and a terminal.</li>
+      <li>Create a new Jupyter notebook file named, for example, <code>07-multiagentic-app-withllm-as-supervisor.ipynb</code> and run all code in separate notebook cells.</li>
+      <li>Place this HTML guide side‑by‑side with your editor.</li>
+      <li>Whenever you see a section titled <strong>Your Task</strong>, follow the instructions and copy or type the code into a <strong>new cell in your notebook</strong>.</li>
+      <li>Run each new notebook cell step‑by‑step and observe the outputs to understand how multi-agent systems work with LangGraph.</li>
+    </ol>
+  </div>
+
+  <h2>1. Introduction to Multi-Agent Systems</h2>
+  <p>
+    In this hands-on lab, you will build a sophisticated multi-agent system where an LLM acts as a supervisor,
+    coordinating multiple specialized worker agents. This pattern is powerful for complex tasks that require
+    different capabilities or domain expertise.
+  </p>
+  <p>
+    <strong>Key Concepts:</strong>
+  </p>
+  <ul>
+    <li><strong>Supervisor Pattern:</strong> A central agent (supervisor) decides which worker agent should handle each step of a task.</li>
+    <li><strong>Specialized Agents:</strong> Each worker agent has specific tools and knowledge for a particular domain (inventory, orders, analytics).</li>
+    <li><strong>State Management:</strong> LangGraph maintains state across agent interactions, allowing agents to build on each other's work.</li>
+    <li><strong>Conditional Routing:</strong> The supervisor uses LLM reasoning to determine the next agent to invoke based on the current state.</li>
+  </ul>
+  <p>
+    In this example, we'll build a warehouse management system with three worker agents:
+    <code>InventoryManager</code>, <code>OrderProcessor</code>, and <code>AnalyticsManager</code>, all orchestrated by an LLM supervisor.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>In your terminal (not inside the notebook), install the required packages by running the command below.</p>
+  </div>
+
+  <pre><code>pip install langgraph langchain langchain-community langchain_openai langchain_experimental langsmith pandas</code></pre>
+
+  <h3>1.1 Load Environment Variables</h3>
+  <p>
+    Use <code>python-dotenv</code> to load your API keys (for example, <code>OPENAI_API_KEY</code>) from a
+    <code>.env</code> file in your project folder. Make sure you have your OpenAI API key configured.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the code below, and then execute the cell.</p>
+  </div>
+
+  <pre><code>from dotenv import load_dotenv
+
+load_dotenv()</code></pre>
+
+  <h2>2. Setting Up the Database</h2>
+  <p>
+    Before we can build our multi-agent system, we need a data source for our agents to work with. We'll create
+    a SQLite database representing a warehouse with inventory, orders, and order items. This simulates a real-world
+    scenario where agents need to query and update data.
+  </p>
+  <p>
+    <strong>Why SQLite?</strong> SQLite is a lightweight, file-based database perfect for prototyping and learning.
+    Our agents will use SQL tools to interact with this database, demonstrating how agents can work with structured data.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell to initialize the database with sample data.</p>
+  </div>
+
+  <pre><code>import sqlite3
+from typing import Annotated
+from langchain_core.tools import tool
+from langchain_experimental.tools import PythonREPLTool
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Initialize SQLite database with some tables
+def init_database():
+    conn = sqlite3.connect('warehouse2.db')
+    c = conn.cursor()
+
+    # Create tables
+    c.execute('''CREATE TABLE IF NOT EXISTS inventory
+                 (product_id TEXT PRIMARY KEY,
+                  name TEXT,
+                  quantity INTEGER,
+                  reorder_point INTEGER,
+                  unit_price REAL)''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS orders
+                 (order_id TEXT PRIMARY KEY,
+                  order_date TIMESTAMP,
+                  status TEXT,
+                  total_amount REAL)''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS order_items
+                 (order_id TEXT,
+                  product_id TEXT,
+                  quantity INTEGER,
+                  FOREIGN KEY(order_id) REFERENCES orders(order_id),
+                  FOREIGN KEY(product_id) REFERENCES inventory(product_id))''')
+
+    # Insert sample data
+    c.execute('DELETE FROM inventory')
+    c.execute('DELETE FROM orders')
+    c.execute('DELETE FROM order_items')
+
+    # Sample inventory
+    inventory_data = [
+        ('SKU001', 'Gaming Laptop', 45, 20, 999.99),
+        ('SKU002', 'Wireless Mouse', 150, 50, 29.99),
+        ('SKU003', 'Mechanical Keyboard', 5, 30, 89.99),
+        ('SKU004', 'Monitor 27"', 30, 15, 299.99),
+        ('SKU005', 'USB-C Hub', 10, 40, 49.99)
+    ]
+    c.executemany('INSERT INTO inventory VALUES (?,?,?,?,?)', inventory_data)
+
+    # Sample orders
+    for i in range(1, 21):  # Create 20 sample orders
+        order_id = f'ORD{i:03d}'
+        order_date = datetime.now() - timedelta(days=i)
+        status = ['Pending', 'Processing', 'Shipped', 'Delivered'][i % 4]
+        c.execute('INSERT INTO orders VALUES (?,?,?,?)',
+                 (order_id, order_date, status, 0))  # Total will be updated
+
+        # Add 1-3 items to each order
+        for j in range(1, (i % 3) + 2):
+            product_id = f'SKU{(i + j) % 5 + 1:03d}'
+            quantity = (i + j) % 5 + 1
+            c.execute('INSERT INTO order_items VALUES (?,?,?)',
+                     (order_id, product_id, quantity))
+
+    conn.commit()
+    conn.close()
+
+# Initialize the database
+init_database()</code></pre>
+
+  <p>
+    <strong>What this does:</strong> This function creates three tables (inventory, orders, order_items) and populates
+    them with sample data. The inventory table tracks products with their quantities and reorder points. The orders table
+    stores order information, and order_items links orders to products. This gives us realistic data for our agents to work with.
+  </p>
+
+  <h2>3. Setting Up Tools for Agents</h2>
+  <p>
+    Agents need tools to interact with the world. In our case, we'll provide two types of tools:
+  </p>
+  <ul>
+    <li><strong>SQL Tools:</strong> Allow agents to query and modify the database using SQL.</li>
+    <li><strong>Python REPL Tool:</strong> Enables agents to execute Python code for complex calculations, data analysis, and transformations.</li>
+  </ul>
+  <p>
+    The <code>SQLDatabaseToolkit</code> automatically generates tools for querying, listing tables, and describing schemas,
+    making it easy for agents to understand and interact with the database.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell to set up the LLM, database connection, and tools.</p>
+  </div>
+
+  <pre><code>from langchain_community.utilities import SQLDatabase
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+from langchain_openai import ChatOpenAI
+from langchain_experimental.tools import PythonREPLTool
+
+llm = ChatOpenAI(model="gpt-4.1-mini")
+
+# Create database connection
+db = SQLDatabase.from_uri("sqlite:///warehouse2.db")
+
+# Create the SQL toolkit
+sql_toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+
+# Create tool instances
+python_repl = PythonREPLTool()</code></pre>
+
+  <p>
+    <strong>Understanding the components:</strong>
+  </p>
+  <ul>
+    <li><code>SQLDatabase</code> (from <code>langchain_community.utilities</code>) wraps the SQLite connection and provides a LangChain-compatible interface.</li>
+    <li><code>SQLDatabaseToolkit</code> generates tools that agents can use to interact with the database.</li>
+    <li>Worker agents are built with <code>create_agent</code> (see the next major section), passing these toolkit tools—do not use the legacy <code>create_sql_agent</code> helper.</li>
+    <li><code>PythonREPLTool</code> allows agents to execute Python code, useful for data analysis and complex operations.</li>
+  </ul>
+
+  <h2>4. Creating Specialized Worker Agents</h2>
+  <p>
+    <strong>Teaching order:</strong> We define the three workers <em>before</em> the supervisor on purpose, so you
+    see concrete roles and prompts first; the supervisor in the next section only orchestrates what you already built.
+  </p>
+  <p>
+    Each worker agent is specialized for a specific domain. We use <code>create_agent</code> from LangChain 1.x,
+    which creates a ReAct-style agent that can use tools and reason about when to use them.
+  </p>
+  <p>
+    <strong>ReAct Pattern:</strong> ReAct (Reasoning + Acting) agents alternate between reasoning steps and
+    tool-using actions. They think about what to do, use tools to gather information, and then reason about the results.
+  </p>
+  <p>
+    <strong>LangChain 1.x API:</strong> The <code>create_agent</code> function is the modern way to create agents in
+    LangChain 1.x. It takes a <code>model</code> (the LLM), a list of <code>tools</code>, and a <code>system_prompt</code>
+    to define the agent's behavior. This is cleaner and more consistent than the older agent creation methods.
+  </p>
+  <p>
+    Each agent gets:
+  </p>
+  <ul>
+    <li>The same LLM instance (for consistency)</li>
+    <li>Access to SQL tools and Python REPL (for data operations)</li>
+    <li>A specialized system prompt that defines its role and capabilities</li>
+  </ul>
+  <p>
+    <strong>InventoryManager special case:</strong> This agent works in two phases for order+inventory requests —
+    Phase 1 checks stock (no updates), then after OrderProcessor runs, Phase 2 deducts inventory.
+    It decides which phase it is in by inspecting conversation history for OrderProcessor's CONCLUSION.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell to create the three specialized worker agents.</p>
+  </div>
+
+  <pre><code>from langchain.agents import create_agent
+
+# Create specialized agents with their tools
+inventory_agent = create_agent(
+    model=llm,
+    tools=[python_repl, *sql_toolkit.get_tools()],
+    system_prompt="""You are the Inventory Manager.
+      You operate in TWO distinct phases depending on where you are in the workflow:
+
+    PHASE 1 - CHECK (called BEFORE OrderProcessor):
+    - Query inventory levels and check stock availability for the requested items.
+    - Report current quantities and whether stock is sufficient for the order.
+    - Do NOT update or deduct any inventory quantities in this phase.
+    - End with CONCLUSION: Stock check complete. Item X has Y units available. [Sufficient/Insufficient] for the order.
+
+    PHASE 2 - UPDATE (called AFTER OrderProcessor has confirmed the order):
+    - Deduct/update inventory quantities to reflect the fulfilled order.
+    - Confirm before and after quantities.
+    - End with CONCLUSION: Inventory updated. Item X reduced from A to B units.
+
+    How to determine your phase: Check the conversation history.
+    - If you see NO message from OrderProcessor with a CONCLUSION → you are in PHASE 1 (CHECK only, do NOT update).
+    - If you see a message from OrderProcessor with a CONCLUSION confirming the order was processed → you are in PHASE 2 (UPDATE inventory).
+
+    Additional Instructions:
+    - NEVER ask for confirmation or approval. Proceed autonomously with the task.
+    - Do NOT say "Please confirm" or "Shall I proceed" — just do the work.
+    - If generating code, make sure the code is correct and returns the expected value.
+    - Think properly before generating code and generate all required code at once.
+    - Use proper SQL syntax and verify data before any updates.
+    - Keep responses focused and concise."""
+)
+
+order_agent = create_agent(
+    model=llm,
+    tools=[python_repl, *sql_toolkit.get_tools()],
+    system_prompt="""You are the Order Processor. You handle ONLY the orders domain:
+    1. Process new orders (order and order_items records as appropriate)
+    2. Update order status and related order fields
+    3. Look up order details (orders / order_items only)
+
+    Important Instructions:
+    - NEVER ask for confirmation or approval. Proceed autonomously with the task.
+    - Do NOT say "Please confirm" or "Shall I proceed" — just do the work.
+    - Always end your response with a clear CONCLUSION: stating what you found and any actions taken
+    - Do NOT check, verify, or query inventory for stock levels or availability. Do NOT read or write the
+      inventory table. If stock sufficiency matters, that was already handled by InventoryManager; use the
+      conversation context and proceed only with order-side changes you are allowed to make.
+    - Do NOT adjust inventory quantities; InventoryManager owns all inventory mutations.
+    - For order updates, confirm the new status
+    - Provide specific quantities and order details for order lines only
+    - Keep responses focused and concise
+    Example format:
+    *Analysis/Actions taken*
+    CONCLUSION: Order XYZ updated. Status changed from A to B; order line details as described."""
+)
+
+analytics_agent = create_agent(
+    model=llm,
+    tools=[python_repl, *sql_toolkit.get_tools()],
+    system_prompt="""You are the Analytics Manager. You can:
+    1. Analyze sales trends
+    2. Generate inventory reports
+    3. Calculate key metrics
+    4. Provide recommendations
+    - NEVER ask for confirmation or approval. Proceed autonomously with the task.
+    - Always end your response with a clear CONCLUSION: stating your findings and recommendations
+    - Provide specific numbers and insights
+    - Keep responses focused and concise
+    - Use clear visualizations when needed
+
+    Example format:
+    *Analysis performed*
+    CONCLUSION: Analysis shows X trend over Y period. Recommend taking Z action."""
+)</code></pre>
+
+  <p>
+    <strong>Why separate agents?</strong> By giving each agent a focused role and specific instructions, we ensure:
+  </p>
+  <ul>
+    <li>Each agent becomes an expert in its domain</li>
+    <li>Clear separation of concerns (inventory vs. orders vs. analytics)</li>
+    <li>Better control over what each agent can and cannot do</li>
+    <li>More reliable and predictable behavior</li>
+  </ul>
+
+  <h2>5. Creating the Supervisor Agent</h2>
+  <p>
+    With <code>InventoryManager</code>, <code>OrderProcessor</code>, and <code>AnalyticsManager</code> defined above,
+    you now add the <strong>supervisor</strong>: the component that reads the conversation and chooses which worker
+    (or <code>FINISH</code>) should act next. The supervisor’s system prompt names the same roles students just created,
+    so the flow of ideas is: specialists first, then orchestration.
+  </p>
+  <p>
+    The supervisor is the "brain" of our multi-agent system. It uses an LLM to analyze the current state and conversation
+    history, then decides which worker agent should handle the next step. This is a powerful pattern because:
+  </p>
+  <ul>
+    <li>The supervisor can reason about complex tasks that require multiple agents.</li>
+    <li>It can dynamically route to different agents based on the conversation context.</li>
+    <li>It knows when the task is complete and should return "FINISH".</li>
+  </ul>
+  <p>
+    We use <code>with_structured_output()</code> to ensure the supervisor always returns a structured response
+    (a Pydantic model) that we can use for routing decisions.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell to create the supervisor agent.</p>
+  </div>
+
+  <pre><code>from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from pydantic import BaseModel
+
+# Create a static system prompt instead of dynamically generating it
+system_prompt = """
+You are a warehouse operations supervisor managing these workers: InventoryManager, OrderProcessor, AnalyticsManager.
+You MUST follow domain boundaries and routing order strictly.
+
+Worker responsibilities:
+- InventoryManager: ALL inventory operations — checking stock, availability, and updating/deducting quantities.
+  Works in two phases: Phase 1 (check only) before order processing, Phase 2 (update) after order is confirmed.
+- OrderProcessor: Creates/updates order records, order items, order status. Does NOT touch inventory tables.
+- AnalyticsManager: Reports, trends, metrics, and analysis only.
+
+MANDATORY 4-STEP SEQUENCE for any request to "process order" or "process order AND update inventory":
+  Step 1 → InventoryManager  (CHECK stock availability only — no inventory updates yet)
+  Step 2 → OrderProcessor    (process/update the order using Step 1 results from conversation context)
+  Step 3 → InventoryManager  (UPDATE/deduct inventory based on the confirmed order from Step 2)
+  Step 4 → FINISH
+
+LOOP PREVENTION — follow these rules exactly:
+- If InventoryManager has posted a CONCLUSION about stock CHECK and OrderProcessor has NOT yet run → route to OrderProcessor.
+- If OrderProcessor has posted a CONCLUSION confirming the order → route to InventoryManager for the inventory UPDATE.
+- If InventoryManager has posted a CONCLUSION about an inventory UPDATE (after OrderProcessor already ran) → respond with FINISH.
+- NEVER route to the same worker twice in a row unless it is the planned second call to InventoryManager (Step 3 above).
+- If you are unsure whether a worker has completed its task, look for the word CONCLUSION in its latest message.
+
+For inventory-only requests (no order processing): InventoryManager → FINISH
+For order-status/lookup-only requests:             OrderProcessor → FINISH
+For analytics/reporting requests:                  AnalyticsManager → FINISH
+"""
+
+options = ["FINISH", "InventoryManager", "OrderProcessor", "AnalyticsManager"]
+
+# Set up the supervisor prompt with the static system prompt
+prompt = ChatPromptTemplate.from_messages([
+    ("system", system_prompt),
+    MessagesPlaceholder(variable_name="messages"),
+    ("system", """Review the conversation above carefully.
+Identify which steps are already COMPLETED by looking for CONCLUSION statements in each worker's messages.
+Based on the mandatory sequence rules, decide who should act next.
+Do NOT repeat a worker that has already completed its current-phase task.
+Who should act next? Or should we FINISH? Select one of: """ + str(options)),
+])
+
+class routeResponse(BaseModel):
+    next: str
+
+# Create the supervisor agent — return {"next": ...} so LangGraph can route
+def supervisor_agent(state):
+    supervisor_chain = prompt | llm.with_structured_output(routeResponse)
+    return {"next": supervisor_chain.invoke(state).next}</code></pre>
+
+  <p>
+    <strong>Key design decisions:</strong>
+  </p>
+  <ul>
+    <li><code>MessagesPlaceholder</code> allows the prompt to include the full conversation history, giving the supervisor context.</li>
+    <li><code>with_structured_output(routeResponse)</code> ensures the LLM returns a Pydantic model with a <code>next</code> field, making routing reliable.</li>
+    <li>The supervisor returns <code>{"next": ...}</code> (not the raw Pydantic object) so LangGraph can merge it into state and conditional edges can read <code>state["next"]</code>.</li>
+    <li>Loop-prevention rules and CONCLUSION markers keep InventoryManager from being called twice in a row for the same phase.</li>
+  </ul>
+
+  <h2>6. Building the LangGraph Workflow</h2>
+  <p>
+    Now we'll assemble our multi-agent system using LangGraph. LangGraph provides a powerful way to define stateful,
+    multi-step workflows with conditional routing.
+  </p>
+  <p>
+    <strong>Key LangGraph Concepts:</strong>
+  </p>
+  <ul>
+    <li><strong>StateGraph:</strong> Defines a graph where nodes share a common state.</li>
+    <li><strong>Nodes:</strong> Functions that process the state and return updates.</li>
+    <li><strong>Edges:</strong> Define the flow between nodes (can be fixed or conditional).</li>
+    <li><strong>State:</strong> A TypedDict that holds all data shared between nodes (messages, routing decisions, etc.).</li>
+  </ul>
+  <p>
+    Our workflow will:
+  </p>
+  <ol>
+    <li>Start with the supervisor</li>
+    <li>Route to the appropriate worker agent based on supervisor's decision</li>
+    <li>Worker agent processes the task and returns to supervisor</li>
+    <li>For order+inventory requests, follow the 4-step sequence: Inventory check → Order process → Inventory update → FINISH</li>
+    <li>Supervisor decides next step (another agent or FINISH) using CONCLUSION markers to avoid loops</li>
+    <li>Repeat until supervisor returns FINISH</li>
+  </ol>
+
+  <h3>6.1 Creating the Agent Node Factory Function</h3>
+  <p>
+    Before building the graph, we need a helper function that creates node functions for each agent.
+    This function uses Python's closure pattern to "bind" an agent and name to a node function.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell.</p>
+  </div>
+
+  <pre><code>from langchain_core.messages import HumanMessage
+
+def agent_node(agent, name):
+    """Create a node function for a specific agent using closure pattern."""
+    def node(state):
+        print(f"Invoking {name} agent with state: {state}")
+        result = agent.invoke(state)
+        return {
+            "messages": [HumanMessage(content=result["messages"][-1].content)]
+        }
+    return node</code></pre>
+
+  <div class="note">
+    <strong>Understanding the Closure Pattern:</strong> The <code>agent_node</code> function demonstrates Python's closure pattern. When you call <code>agent_node(inventory_agent, "InventoryManager")</code>, Python creates a new inner function that "captures" or "closes over" the <code>inventory_agent</code> and <code>"InventoryManager"</code> values. This inner function is then returned and can be used later, and it will always remember those captured values even though the outer function has finished executing. This is why each node function knows which agent to invoke and what name to use when formatting messages.
+  </div>
+
+  <h3>6.2 Defining the Agent State</h3>
+  <p>
+    The state is a TypedDict that defines what data flows through the graph. The <code>messages</code> field
+    uses <code>Annotated[list, operator.add]</code> which means messages are appended
+    (not replaced) when nodes return updates, preserving the full conversation history.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell.</p>
+  </div>
+
+  <pre><code>from typing_extensions import TypedDict, Annotated
+import operator
+
+class AgentState(TypedDict):
+    # The annotation tells the graph that new messages will always
+    # be added to the current state
+    messages: Annotated[list, operator.add]
+    # The 'next' field indicates where to route to next
+    next: str</code></pre>
+
+  <h3>6.3 Creating Agent Node Functions</h3>
+  <p>
+    Now we'll use the <code>agent_node</code> factory function to create specialized node functions for each
+    of our worker agents. Each returned function is bound to its specific agent and name.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell.</p>
+  </div>
+
+  <pre><code># Create agent nodes using the closure pattern
+inventory_node = agent_node(inventory_agent, "InventoryManager")
+order_node = agent_node(order_agent, "OrderProcessor")
+analytics_node = agent_node(analytics_agent, "AnalyticsManager")</code></pre>
+
+  <h3>6.4 Setting Up the Workflow Graph</h3>
+  <p>
+    Now we'll create the StateGraph and add all our nodes. The graph needs to know about all nodes
+    before we can connect them with edges.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell.</p>
+  </div>
+
+  <pre><code>from langgraph.graph import END, StateGraph, START
+
+# Set up workflow
+workflow = StateGraph(AgentState)
+workflow.add_node("InventoryManager", inventory_node)
+workflow.add_node("OrderProcessor", order_node)
+workflow.add_node("AnalyticsManager", analytics_node)
+workflow.add_node("supervisor", supervisor_agent)
+
+# Conditional routing from supervisor
+workflow.add_conditional_edges(
+    "supervisor",
+    lambda state: state["next"],
+    {
+        "InventoryManager": "InventoryManager",
+        "OrderProcessor": "OrderProcessor",
+        "AnalyticsManager": "AnalyticsManager",
+        "FINISH": END
+    }
+)
+
+# Entry point and return edges
+workflow.set_entry_point("supervisor")
+workflow.add_edge("InventoryManager", "supervisor")
+workflow.add_edge("OrderProcessor", "supervisor")
+workflow.add_edge("AnalyticsManager", "supervisor")</code></pre>
+
+  <h3>6.5 Adding Edges Between Nodes</h3>
+  <p>
+    Edges define how control flows through the graph. All worker agents return to the supervisor after
+    completing their tasks. We also set the supervisor as the entry point and add conditional edges
+    so the supervisor can route to the right worker (or FINISH).
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>The edges and conditional routing are already included in the previous cell (section 6.4). Review that they match the pattern below.</p>
+  </div>
+
+  <pre><code># Already added in the previous cell:
+# workflow.add_conditional_edges("supervisor", lambda state: state["next"], {...})
+# workflow.set_entry_point("supervisor")
+# workflow.add_edge("InventoryManager", "supervisor")
+# workflow.add_edge("OrderProcessor", "supervisor")
+# workflow.add_edge("AnalyticsManager", "supervisor")</code></pre>
+
+  <h3>6.6 Compiling and Visualizing the Graph</h3>
+  <p>
+    Finally, we compile the graph to make it executable, and then visualize it to see the flow structure.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell.</p>
+  </div>
+
+  <pre><code># Compile the graph
+graph = workflow.compile()
+
+from IPython.display import Image
+Image(graph.get_graph().draw_mermaid_png())</code></pre>
+
+  <p>
+    <strong>Understanding the complete workflow:</strong>
+  </p>
+  <ul>
+    <li>The <code>agent_node</code> factory function creates specialized node functions using closures. Each returned function "remembers" its agent and name, making it easy to create multiple nodes with the same structure but different behaviors.</li>
+    <li><code>AgentState</code> defines the shared state structure. The <code>Annotated[list, operator.add]</code> annotation ensures messages are appended (not replaced), preserving the full conversation history across all agent interactions.</li>
+    <li>When LangGraph calls a node function (like <code>inventory_node</code>), it passes the current state. The node function uses its captured agent to process the state, then returns updated messages that get appended to the state.</li>
+    <li>Fixed edges ensure that all worker agents always return control to the supervisor after completing their tasks.</li>
+    <li>Conditional edges allow the supervisor to dynamically route to different agents based on its decision, or to END when the task is complete.</li>
+    <li>The graph visualization shows the complete flow: START → supervisor → (worker agents) → supervisor → ... → END</li>
+  </ul>
+  <div class="note">
+    <strong>LangChain 1.x and LangGraph Compatibility:</strong> The <code>create_agent</code> function from LangChain 1.x creates agents that are fully compatible with LangGraph. These agents accept and return state dictionaries with a "messages" key, making them perfect for use in LangGraph workflows. This is one of the benefits of LangChain 1.x's unified interface design.
+  </div>
+
+  <h2>7. Running Queries Through the Multi-Agent System</h2>
+  <p>
+    Now let's test our multi-agent system! When you invoke the graph with a query, here's what happens:
+  </p>
+  <ol>
+    <li>The query is added to the state as a <code>HumanMessage</code></li>
+    <li>The supervisor analyzes the query and decides which agent should handle it</li>
+    <li>The selected agent uses its tools (SQL, Python) to complete the task</li>
+    <li>The agent's response is added to the conversation</li>
+    <li>The supervisor reviews the result and decides: continue with another agent or FINISH</li>
+    <li>This continues until the supervisor determines the task is complete</li>
+  </ol>
+  <p>
+    This pattern is powerful because complex tasks can require multiple agents working together. For example,
+    processing an order with inventory updates follows:
+    InventoryManager (check) → OrderProcessor → InventoryManager (update) → FINISH.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-title">Your Task</div>
+    <p>Create a <strong>new cell</strong> in your notebook, paste or type the following code, and execute the cell to test the multi-agent system with a sample query.</p>
+  </div>
+
+  <pre><code>from IPython.display import Markdown
+
+# Example usage
+queries = [
+    "Process order ORD001 and update inventory accordingly",
+    # Uncomment other queries to test different scenarios:
+    # "Check all products below their reorder point and create a restock report",
+    # "Analyze the top 5 selling products from the last 20 orders and visualize the results",
+    # "Check if we have enough inventory to fulfill order ORD005 and process it if possible"
+]
+
+for query in queries:
+    print(f"\nProcessing query: {query}")
+    print("-" * 50)
+    result = graph.invoke(
+        {
+            "messages": [
+                {"role": "user", "content": query}
+            ]
+        }
+    )
+    print("\nFinal Result:")
+    display(Markdown(result['messages'][-1].content))</code></pre>
+
+  <p>
+    <strong>What to observe:</strong>
+  </p>
+  <ul>
+    <li>Watch the console output to see which agent is invoked at each step</li>
+    <li>Notice how the supervisor routes between agents based on the task requirements</li>
+    <li>See how agents use SQL tools to query the database</li>
+    <li>Observe how the conversation state accumulates messages from multiple agents</li>
+  </ul>
+
+  <div class="note">
+    <strong>Experiment with different queries:</strong> Try uncommenting the other queries in the list to see how
+    the supervisor routes to different agents. For example, an inventory check query will route to InventoryManager,
+    while a sales analysis query will route to AnalyticsManager. Complex queries might require multiple agents
+    working in sequence.
+  </div>
+
+  <h2>8. Understanding the Multi-Agent Flow</h2>
+  <p>
+    Let's break down what happens when you run a query like "Process order ORD001 and update inventory accordingly":
+  </p>
+  <ol>
+    <li><strong>Initial State:</strong> The query arrives as a user message in the state.</li>
+    <li><strong>Supervisor Decision (Step 1):</strong> The supervisor follows the mandatory 4-step sequence and routes
+        first to <strong>InventoryManager</strong> for a stock CHECK only.</li>
+    <li><strong>InventoryManager PHASE 1:</strong> Checks availability for the order items, reports quantities, and ends
+        with a CONCLUSION about stock sufficiency — without updating inventory.</li>
+    <li><strong>Supervisor Decision (Step 2):</strong> Sees InventoryManager's CHECK CONCLUSION and routes to
+        <strong>OrderProcessor</strong>.</li>
+    <li><strong>OrderProcessor:</strong> Updates order status / order records using the stock context from the conversation.
+        Does not touch inventory. Ends with a CONCLUSION.</li>
+    <li><strong>Supervisor Decision (Step 3):</strong> Sees OrderProcessor's CONCLUSION and routes back to
+        <strong>InventoryManager</strong> for the inventory UPDATE.</li>
+    <li><strong>InventoryManager PHASE 2:</strong> Deducts inventory quantities based on the confirmed order and ends with
+        an UPDATE CONCLUSION.</li>
+    <li><strong>Supervisor Decision (Step 4):</strong> Sees the inventory UPDATE CONCLUSION and returns <strong>FINISH</strong>.</li>
+    <li><strong>Completion:</strong> The graph terminates and returns the final state.</li>
+  </ol>
+  <p>
+    This 4-step pattern (check → process order → update inventory → finish) prevents the common failure modes of
+    updating inventory before the order is confirmed, or looping forever between the same workers.
+  </p>
+
+  <h2>9. Advanced Concepts and Patterns</h2>
+  <h3>9.1 State Management</h3>
+  <p>
+    The <code>AgentState</code> TypedDict is the shared memory of our system. The <code>Annotated[list, operator.add]</code>
+    annotation ensures that messages are appended, not replaced. This preserves the full conversation history, allowing
+    agents to see what previous agents have done.
+  </p>
+
+  <h3>9.2 Conditional Routing</h3>
+  <p>
+    The <code>add_conditional_edges</code> method enables dynamic routing based on state. The lambda function
+    <code>lambda x: x["next"]</code> extracts the routing decision from the state, and the mapping dictionary
+    determines which node to go to. This is how the supervisor controls the flow.
+  </p>
+
+  <h3>9.3 Agent Specialization</h3>
+  <p>
+    By giving each agent a focused system prompt and specific tools, we create domain experts. This is more reliable
+    than a single general-purpose agent because:
+  </p>
+  <ul>
+    <li>Each agent has clear boundaries and responsibilities</li>
+    <li>Prompts can be optimized for specific tasks</li>
+    <li>Tools can be restricted to what's needed for each domain</li>
+    <li>Errors are easier to debug and contain</li>
+  </ul>
+
+  <h3>9.4 LLM as Supervisor</h3>
+  <p>
+    Using an LLM as the supervisor is powerful because:
+  </p>
+  <ul>
+    <li>It can understand natural language queries and map them to agent capabilities</li>
+    <li>It can reason about complex tasks that require multiple agents</li>
+    <li>It can adapt to new situations without hardcoded rules</li>
+    <li>It can determine when a task is truly complete</li>
+  </ul>
+  <p>
+    However, this also means the supervisor's decisions depend on the quality of its prompt and the LLM's reasoning
+    capabilities. Well-designed prompts are crucial for reliable routing.
+  </p>
+
+</main>
+</body>
+</html>
+

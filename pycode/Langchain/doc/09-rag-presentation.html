@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAG Concepts – Embeddings, Retrieval, and Generation</title>
+  <style>
+    :root {
+      --slide-width: 960px;
+      --slide-height: 540px;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 17px;
+      line-height: 1.45;
+      margin: 0;
+      padding: 0;
+      background: #e2e8f0;
+      color: #111827;
+    }
+    main {
+      max-width: var(--slide-width);
+      margin: 1rem auto 2rem;
+      padding: 1rem;
+    }
+    .header {
+      text-align: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+      border-radius: 12px;
+    }
+    .header h1 { font-size: 22px; margin: 0 0 0.5rem; color: #0f172a; }
+    .header p { font-size: 16px; color: #64748b; margin: 0; }
+    kbd {
+      background: #e2e8f0;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      border: 1px solid #cbd5e1;
+    }
+    .page {
+      width: var(--slide-width);
+      height: var(--slide-height);
+      min-height: var(--slide-height);
+      max-height: var(--slide-height);
+      margin: 1.5rem auto;
+      padding: 1.6rem 2.2rem 1.4rem;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      page-break-after: always;
+      overflow-y: auto;
+    }
+    .slide-content { margin-bottom: 0.7rem; }
+    .slide-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 0.2rem;
+      border-bottom: 2px solid rgba(37, 99, 235, 0.35);
+      padding-bottom: 0.4rem;
+    }
+    .slide-subtitle {
+      font-size: 16px;
+      color: #64748b;
+      margin: 0.35rem 0 0.7rem;
+      font-weight: 500;
+    }
+    .point { margin: 0.45rem 0; }
+    .point-title {
+      font-weight: 650;
+      color: #0f172a;
+      margin-bottom: 0.1rem;
+      font-size: 15px;
+    }
+    .point-desc {
+      font-size: 14px;
+      color: #475569;
+      margin: 0 0 0 0.9rem;
+      line-height: 1.4;
+    }
+    .speaker-notes {
+      padding: 0.55rem 0.85rem;
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #1e40af;
+    }
+    .speaker-notes-title { font-weight: 700; font-size: 13px; color: #1d4ed8; margin-bottom: 0.2rem; }
+    .speaker-notes p { margin: 0.15rem 0; }
+    code {
+      font-family: "Fira Code", Menlo, Monaco, Consolas, monospace;
+      background-color: #eff6ff;
+      padding: 0.08rem 0.28rem;
+      border-radius: 4px;
+      font-size: 0.88em;
+      color: #1d4ed8;
+    }
+    .concept-block {
+      padding: 0.6rem 0.85rem;
+      margin: 0.45rem 0;
+      background: #f8fafc;
+      border-left: 4px solid #6366f1;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .concept-block strong { color: #334155; }
+    .good-example {
+      border-left: 4px solid #2563eb;
+      background: #eff6ff;
+      padding: 0.55rem 0.8rem;
+      margin: 0.4rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+    }
+    .warn-example {
+      border-left: 4px solid #d97706;
+      background: #fffbeb;
+      padding: 0.55rem 0.8rem;
+      margin: 0.4rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+    }
+    .bad-example {
+      border-left: 4px solid #dc2626;
+      background: #fef2f2;
+      padding: 0.55rem 0.8rem;
+      margin: 0.4rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+    }
+    .code-box {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 0.65rem 0.9rem;
+      border-radius: 6px;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0.4rem 0;
+      line-height: 1.45;
+      font-family: "Fira Code", Menlo, Monaco, Consolas, monospace;
+    }
+    .diagram-wrap {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.4rem;
+      margin: 0.4rem 0;
+      text-align: center;
+    }
+    .diagram-wrap svg { max-width: 100%; height: auto; }
+    .diagram-caption {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+    table.compact {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 0.35rem 0;
+    }
+    table.compact th, table.compact td {
+      border: 1px solid #e2e8f0;
+      padding: 0.32rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.compact th { background: #f1f5f9; }
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.42rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; }
+    .formula {
+      font-family: "Cambria Math", "Times New Roman", serif;
+      background: #0f172a;
+      color: #e0e7ff;
+      text-align: center;
+      padding: 0.55rem 0.8rem;
+      border-radius: 8px;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      margin: 0.45rem 0;
+    }
+    .chip {
+      display: inline-block;
+      font-family: "Fira Code", Menlo, Monaco, Consolas, monospace;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      font-size: 12px;
+      margin: 0.1rem 0.15rem;
+    }
+    .tiny { font-size: 12px; color: #64748b; }
+    .agenda-item {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      margin: 0.32rem 0;
+    }
+    .agenda-num {
+      flex: 0 0 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      font-size: 13px;
+    }
+    .step-card h4 {
+      margin: 0 0 0.25rem;
+      font-size: 13px;
+      color: #1e40af;
+    }
+    @media print {
+      body { background: white; }
+      .page { box-shadow: none; border: 1px solid #e5e7eb; margin: 0; page-break-after: always; }
+      .header, .slide-nav, .end-marker { display: none !important; }
+    }
+    body.presentation-mode { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .presentation-mode main { margin: 0; padding: 2rem; max-width: none; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .presentation-mode .page { display: none; margin: 0; flex-shrink: 0; }
+    .presentation-mode .page.active { display: block !important; }
+    .presentation-mode .end-marker { display: none !important; }
+    .slide-nav {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+    }
+    .slide-nav kbd { background: #374151; padding: 0.15rem 0.4rem; border-radius: 4px; border: none; color: #fff; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="header">
+    <h1>RAG Concepts – From Vectors to Agentic Retrieval</h1>
+    <p>Press <kbd>F</kbd> fullscreen · <kbd>P</kbd> presentation mode · <kbd>←</kbd> <kbd>→</kbd> <kbd>Space</kbd> navigate</p>
+  </div>
+
+  <!-- SLIDE 1 -->
+  <div class="page">
+    <div class="slide-content" style="text-align: center; padding-top: 2.4rem;">
+      <div class="slide-title" style="font-size: 28px; border: none;">RAG Concepts</div>
+      <div class="slide-subtitle" style="margin-top: 0.8rem; font-size: 18px;">
+        Embeddings, similarity, chunking, retrieval, and generation
+      </div>
+      <div class="concept-block" style="text-align: left; margin-top: 1.6rem;">
+        <strong>Theory session</strong> before the hands-on lab<br />
+        Companion lab: <code>09-rag.html</code> — employee handbook RAG with LangChain + Chroma
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>This is conceptual. Students should leave able to explain vectors, embeddings, cosine, chunking, MMR, Chroma, and why agentic RAG differs from a fixed retrieve-then-generate pipeline.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Learning Path</div>
+      <div class="slide-subtitle">We build the idea from geometry, then to models, then to RAG systems</div>
+      <div class="agenda-item"><div class="agenda-num">1</div><div><strong>Strings as numbers</strong><div class="tiny">Arrays in [−1, 1] · 2D graph · lines from origin · vectors</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">2</div><div><strong>Embedding models</strong><div class="tiny">Patterns → features at array indexes · embedded meaning · example code</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">3</div><div><strong>Cosine similarity</strong><div class="tiny">Angle between vectors as a similarity score</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">4</div><div><strong>Documents &amp; chunking</strong><div class="tiny">PDF → Document objects · four chunking strategies</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">5</div><div><strong>Retrieval, MMR &amp; Chroma</strong><div class="tiny">Top-k, scores, MMR in detail, vector store</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">6</div><div><strong>Traditional RAG vs Agentic RAG</strong><div class="tiny">Always-retrieve pipeline vs an agent that chooses when to search</div></div></div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Tell students: do not jump to “vector database” first. If they understand arrows on a graph, everything later is the same idea at larger scale.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Where We Are Going: RAG</div>
+      <div class="slide-subtitle">Retrieval Augmented Generation — retrieve first, then generate from that context</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 880 210" xmlns="http://www.w3.org/2000/svg" aria-label="RAG two phases">
+          <rect x="20" y="20" width="400" height="170" rx="12" fill="#eff6ff" stroke="#3b82f6"/>
+          <text x="220" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#1e40af">Indexing (once)</text>
+          <rect x="40" y="70" width="90" height="40" rx="6" fill="#fff" stroke="#93c5fd"/><text x="85" y="95" text-anchor="middle" font-size="11" fill="#1e3a8a">PDF / docs</text>
+          <rect x="150" y="70" width="90" height="40" rx="6" fill="#fff" stroke="#93c5fd"/><text x="195" y="95" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunks</text>
+          <rect x="260" y="70" width="90" height="40" rx="6" fill="#fff" stroke="#93c5fd"/><text x="305" y="95" text-anchor="middle" font-size="11" fill="#1e3a8a">Embeddings</text>
+          <rect x="140" y="130" width="170" height="40" rx="6" fill="#dbeafe" stroke="#2563eb"/><text x="225" y="155" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">Vector store</text>
+          <path d="M130 90 H150" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M240 90 H260" stroke="#64748b" stroke-width="2"/>
+          <path d="M305 110 V130" stroke="#64748b" stroke-width="2"/>
+          <rect x="460" y="20" width="400" height="170" rx="12" fill="#f0fdf4" stroke="#22c55e"/>
+          <text x="660" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#166534">Query time (every question)</text>
+          <rect x="480" y="70" width="90" height="40" rx="6" fill="#fff" stroke="#86efac"/><text x="525" y="95" text-anchor="middle" font-size="11" fill="#14532d">Question</text>
+          <rect x="590" y="70" width="90" height="40" rx="6" fill="#fff" stroke="#86efac"/><text x="635" y="95" text-anchor="middle" font-size="11" fill="#14532d">Retrieve</text>
+          <rect x="700" y="70" width="140" height="40" rx="6" fill="#dcfce7" stroke="#16a34a"/><text x="770" y="95" text-anchor="middle" font-size="11" fill="#14532d">LLM generates</text>
+          <text x="660" y="155" text-anchor="middle" font-size="12" fill="#166534">Augment the prompt with retrieved chunks</text>
+          <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b"/></marker></defs>
+        </svg>
+        <div class="diagram-caption">Today we learn the ideas behind each box — especially how “retrieve similar text” is even possible.</div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>LLMs do not contain the company handbook. RAG grounds answers in your files. The hard part is finding the right paragraphs. That starts with representing meaning as numbers.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">The Problem: Comparing Strings</div>
+      <div class="slide-subtitle">A computer does not “understand” English. Equality of characters is not equality of meaning.</div>
+      <div class="two-col">
+        <div class="bad-example">
+          <strong>Exact match fails</strong>
+          <p style="margin:0.35rem 0 0;">“vacation policy” ≠ “time off guidelines”</p>
+          <p class="tiny" style="margin:0.3rem 0 0;">Different characters. Same idea for an HR assistant.</p>
+        </div>
+        <div class="good-example">
+          <strong>We need a meaning score</strong>
+          <p style="margin:0.35rem 0 0;">If two phrases mean similar things, the score should be high — even when no word is shared.</p>
+        </div>
+      </div>
+      <div class="concept-block">
+        <strong>Core trick:</strong> convert each string into an <strong>array of numbers</strong> (typically between <code>−1</code> and <code>1</code>).
+        Then compare the arrays with geometry instead of comparing letters.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Ask: “How would you write a function similar(a, b) for English?” Keyword overlap is brittle. Geometry on numbers is the path used in RAG.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Strings → Arrays of Numbers</div>
+      <div class="slide-subtitle">Start with the smallest graphable case: an array of size <strong>2</strong></div>
+      <table class="compact">
+        <tr><th>String</th><th>Array (2 numbers in [−1, 1])</th><th>How to read it</th></tr>
+        <tr>
+          <td>“vacation policy”</td>
+          <td><span class="chip">[0.80, 0.20]</span></td>
+          <td>x = 0.80, y = 0.20</td>
+        </tr>
+        <tr>
+          <td>“annual leave”</td>
+          <td><span class="chip">[0.75, 0.28]</span></td>
+          <td>Nearby coordinates — similar meaning</td>
+        </tr>
+        <tr>
+          <td>“dress code”</td>
+          <td><span class="chip">[0.10, 0.85]</span></td>
+          <td>Different place on the graph — different topic</td>
+        </tr>
+      </table>
+      <div class="concept-block">
+        Each pair is a <strong>point</strong> on the 2D plane. Two numbers = two axes. That is enough to draw.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>These toy numbers are for teaching. Real models output hundreds or thousands of numbers. The graph is only possible in 2D (or 3D).</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Plot the Points — Then Draw Lines from the Origin</div>
+      <div class="slide-subtitle">Origin (0, 0) is the starting point of every arrow</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" aria-label="2D vectors from origin">
+          <rect x="8" y="8" width="704" height="284" rx="8" fill="#f8fafc"/>
+          <!-- axes -->
+          <line x1="80" y1="250" x2="430" y2="250" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="80" y1="250" x2="80" y2="30" stroke="#94a3b8" stroke-width="1.5"/>
+          <polygon points="430,250 418,245 418,255" fill="#94a3b8"/>
+          <polygon points="80,30 75,42 85,42" fill="#94a3b8"/>
+          <text x="438" y="254" font-size="12" fill="#64748b">x</text>
+          <text x="72" y="22" font-size="12" fill="#64748b">y</text>
+          <text x="68" y="264" font-size="11" fill="#94a3b8">(0,0)</text>
+          <text x="400" y="268" font-size="10" fill="#94a3b8">1.0</text>
+          <text x="52" y="48" font-size="10" fill="#94a3b8">1.0</text>
+          <defs>
+            <marker id="va" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563eb"/></marker>
+            <marker id="vb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker>
+            <marker id="vc" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#d97706"/></marker>
+          </defs>
+          <!-- scale: 320px = 1.0 in x, 200px = 1.0 in y from origin (80,250) -->
+          <!-- A [0.80, 0.20] → (80+256, 250-40) = (336, 210) -->
+          <line x1="80" y1="250" x2="336" y2="210" stroke="#2563eb" stroke-width="3" marker-end="url(#va)"/>
+          <circle cx="336" cy="210" r="4" fill="#2563eb"/>
+          <text x="348" y="206" font-size="12" font-weight="600" fill="#1d4ed8">vacation policy</text>
+          <text x="348" y="220" font-size="10" fill="#64748b">[0.80, 0.20]</text>
+          <!-- B [0.75, 0.28] → (80+240, 250-56) = (320, 194) -->
+          <line x1="80" y1="250" x2="320" y2="194" stroke="#059669" stroke-width="3" marker-end="url(#vb)"/>
+          <circle cx="320" cy="194" r="4" fill="#059669"/>
+          <text x="200" y="168" font-size="12" font-weight="600" fill="#047857">annual leave</text>
+          <text x="200" y="182" font-size="10" fill="#64748b">[0.75, 0.28]</text>
+          <!-- C [0.10, 0.85] → (80+32, 250-170) = (112, 80) -->
+          <line x1="80" y1="250" x2="112" y2="80" stroke="#d97706" stroke-width="3" marker-end="url(#vc)"/>
+          <circle cx="112" cy="80" r="4" fill="#d97706"/>
+          <text x="122" y="70" font-size="12" font-weight="600" fill="#b45309">dress code</text>
+          <text x="122" y="84" font-size="10" fill="#64748b">[0.10, 0.85]</text>
+          <!-- legend -->
+          <rect x="470" y="50" width="230" height="190" rx="8" fill="#fff" stroke="#e2e8f0"/>
+          <text x="585" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">What you are seeing</text>
+          <text x="490" y="108" font-size="12" fill="#334155">• Each string → a point</text>
+          <text x="490" y="130" font-size="12" fill="#334155">• Arrow starts at origin</text>
+          <text x="490" y="152" font-size="12" fill="#334155">• Blue and green almost overlap</text>
+          <text x="490" y="174" font-size="12" fill="#334155">• Orange points a different way</text>
+          <text x="490" y="204" font-size="12" fill="#1e40af">Nearby arrows ≈ similar meaning</text>
+        </svg>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Trace each arrow with a finger from (0,0). Stress: we did not plot the words. We plotted the number pairs. Meaning became geometry.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Those Lines Are Vectors</div>
+      <div class="slide-subtitle">A vector has two properties: <strong>magnitude</strong> (length) and <strong>direction</strong> (angle)</div>
+      <div class="two-col">
+        <div class="step-card">
+          <h4>Magnitude</h4>
+          <p style="margin:0;color:#475569;">How long is the arrow from the origin to the point?</p>
+          <p style="margin:0.4rem 0 0;font-family:Cambria Math,serif;">‖v‖ = √(x² + y²)</p>
+          <p class="tiny" style="margin:0.35rem 0 0;">“vacation policy”: √(0.80² + 0.20²) ≈ 0.82</p>
+        </div>
+        <div class="step-card">
+          <h4>Direction</h4>
+          <p style="margin:0;color:#475569;">Which way does the arrow point?</p>
+          <p style="margin:0.4rem 0 0;">Blue and green point almost the same way. Orange is closer to the y-axis.</p>
+        </div>
+      </div>
+      <div class="good-example" style="margin-top:0.7rem;">
+        <strong>For meaning, direction matters more than length.</strong>
+        Two phrases about time off point the same way. A phrase about clothing points elsewhere.
+        Similarity of meaning ≈ similarity of direction.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>If students know physics: same as displacement arrows. If not: “arrow from origin.” Cosine later ignores length (it normalizes), which is why direction is the similarity story.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Generalize: Larger Arrays</div>
+      <div class="slide-subtitle">Real text is too rich for 2 numbers. The same idea works in hundreds or thousands of dimensions.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 175" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="20" width="250" height="130" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+          <text x="135" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af">2D (we can draw)</text>
+          <text x="135" y="78" text-anchor="middle" font-size="12" fill="#334155">[0.80, 0.20]</text>
+          <text x="135" y="104" text-anchor="middle" font-size="11" fill="#64748b">2 axes · a plane</text>
+          <text x="135" y="128" text-anchor="middle" font-size="11" fill="#64748b">Teaching picture only</text>
+          <rect x="305" y="20" width="250" height="130" rx="8" fill="#f5f3ff" stroke="#8b5cf6"/>
+          <text x="430" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">n-D (cannot plot)</text>
+          <text x="430" y="78" text-anchor="middle" font-size="11" fill="#334155">[0.23, −0.45, 0.67, …]</text>
+          <text x="430" y="104" text-anchor="middle" font-size="11" fill="#64748b">384, 768, 1536, … numbers</text>
+          <text x="430" y="128" text-anchor="middle" font-size="11" fill="#64748b">Still a vector from origin</text>
+          <rect x="600" y="20" width="250" height="130" rx="8" fill="#f0fdf4" stroke="#22c55e"/>
+          <text x="725" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">Same rules apply</text>
+          <text x="725" y="78" text-anchor="middle" font-size="11" fill="#334155">Magnitude + direction</text>
+          <text x="725" y="104" text-anchor="middle" font-size="11" fill="#64748b">Nearby direction = similar</text>
+          <text x="725" y="128" text-anchor="middle" font-size="11" fill="#64748b">Math still works</text>
+        </svg>
+      </div>
+      <div class="concept-block">
+        A string can be converted into an array of size 2, 8, 384, or 1536.
+        You cannot draw a 1536-dimensional arrow — but the computer can still measure how aligned two arrows are.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>OpenAI <code>text-embedding-3-small</code> in the lab is 1536 dimensions. “High-dimensional space” just means a long list of numbers, one per axis.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Who Turns Strings into Arrays?</div>
+      <div class="slide-subtitle">We do not pick the numbers by hand. A <strong>trained model</strong> does.</div>
+      <div class="point">
+        <div class="point-title">An embedding model is a neural network trained on huge amounts of text</div>
+        <div class="point-desc">Its job: take a string in, emit a fixed-length array of numbers out.</div>
+      </div>
+      <div class="point">
+        <div class="point-title">Training teaches it to notice patterns</div>
+        <div class="point-desc">Words and phrases that appear in similar contexts tend to mean similar things (“vacation”, “annual leave”, “PTO”). The model is rewarded when those phrases land as nearby vectors.</div>
+      </div>
+      <div class="point">
+        <div class="point-title">You call the model; you do not invent the coordinates</div>
+        <div class="point-desc"><code>embed_query("vacation policy")</code> → <code>[0.023, -0.41, 0.67, …]</code></div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Contrast with one-hot or bag-of-words: those arrays are sparse and do not place synonyms near each other. Embedding models are trained so synonyms cluster.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 10 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Patterns → Features → Indexes</div>
+      <div class="slide-subtitle">Each slot in the array is a learned feature channel — not a random float</div>
+      <p class="tiny" style="margin:0 0 0.4rem;">Toy 4-D story (real models are not labeled this cleanly, but this is the right mental model):</p>
+      <table class="compact">
+        <tr>
+          <th>Index</th>
+          <th>Feature the model learned to encode</th>
+          <th>“vacation policy”</th>
+          <th>“dress code”</th>
+        </tr>
+        <tr><td><code>0</code></td><td>Time-off / leave relatedness</td><td>0.82</td><td>0.11</td></tr>
+        <tr><td><code>1</code></td><td>Appearance / clothing</td><td>0.05</td><td>0.91</td></tr>
+        <tr><td><code>2</code></td><td>Policy / rules language</td><td>0.70</td><td>0.68</td></tr>
+        <tr><td><code>3</code></td><td>Money / compensation</td><td>0.15</td><td>0.08</td></tr>
+      </table>
+      <div class="warn-example">
+        In a 1536-D model you usually <strong>cannot name</strong> index 417. Meaning is distributed across many indexes.
+        Still: each number is a <em>learned</em> coordinate, not noise.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Be honest: we do not inspect index 47 in production. The teaching point is “structured meaning,” not “dimension 3 = salary.” Both phrases score high on “policy language” — that is why they are not opposites.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 11 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Embedded Meaning</div>
+      <div class="slide-subtitle">The array is called an <strong>embedding</strong>. The model is an <strong>embedding model</strong>.</div>
+      <div class="two-col">
+        <div class="good-example">
+          <strong>Embedding (noun)</strong>
+          <p style="margin:0.3rem 0 0;">The array of numbers that <em>embeds</em> (packs) the meaning of the text into a vector.</p>
+          <p class="tiny" style="margin:0.35rem 0 0;">“vacation policy” → embedding vector</p>
+        </div>
+        <div class="good-example">
+          <strong>Embedding model</strong>
+          <p style="margin:0.3rem 0 0;">The trained network that maps any string to that array. Same model ⇒ same geometry for all your documents and queries.</p>
+        </div>
+      </div>
+      <div class="concept-block">
+        If you change embedding models, you change the coordinate system.
+        Never mix vectors from model A with vectors from model B in the same search.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Lab uses one model: <code>text-embedding-3-small</code>. If they re-index later with a different model, they must rebuild the vector store.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 12 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Generating Embeddings — Example Code</div>
+      <div class="slide-subtitle">LangChain + OpenAI embedding model (same pattern as the lab)</div>
+      <div class="code-box">from langchain_openai import OpenAIEmbeddings
+
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+sample_texts = [
+    "Employee vacation policy and time off",
+    "Annual leave and holiday guidelines",
+    "Company dress code requirements",
+]
+
+sample_embeddings = [embeddings.embed_query(text) for text in sample_texts]
+
+print(len(sample_embeddings[0]))       # 1536 dimensions
+print(sample_embeddings[0][:8])        # first 8 numbers of vector 1</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p><code>embed_query</code> is for a single string (the user question). For many chunks you typically use <code>embed_documents</code>. Same vector space either way.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 13 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">What Comes Back</div>
+      <div class="slide-subtitle">A long list of floats. Similar sentences look similar as lists — not as English.</div>
+      <div class="code-box" style="font-size:11px;">Text: "vacation policy"       → [ 0.23, -0.45,  0.67,  0.12, ...]
+Text: "time off guidelines"   → [ 0.25, -0.43,  0.65,  0.10, ...]  # close numbers
+Text: "employee benefits"     → [ 0.12, -0.89,  0.34, -0.40, ...]  # different topic</div>
+      <div class="three-col" style="margin-top:0.5rem;">
+        <div class="step-card"><h4>Same model</h4><p style="margin:0;color:#475569;">Every string is projected into the same space so comparison is valid.</p></div>
+        <div class="step-card"><h4>Fixed length</h4><p style="margin:0;color:#475569;">Short or long sentence → same number of dimensions (the model pools meaning).</p></div>
+        <div class="step-card"><h4>Ready to score</h4><p style="margin:0;color:#475569;">We still need a formula that turns two arrays into one similarity number.</p></div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Point at the first two rows: coordinates move together. That is “nearby arrows” in 1536-D. Next: cosine makes that a single score.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 14 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Cosine Similarity — Score from the Angle</div>
+      <div class="slide-subtitle">Cosine of the angle between two arrows: 1 = same direction, 0 = right angle, −1 = opposite</div>
+      <div class="formula">cos(θ) = (A · B) / ( ‖A‖ × ‖B‖ )</div>
+      <div class="two-col">
+        <div>
+          <div class="diagram-wrap">
+            <svg viewBox="0 0 340 160" xmlns="http://www.w3.org/2000/svg">
+              <line x1="30" y1="140" x2="200" y2="140" stroke="#cbd5e1"/>
+              <line x1="30" y1="140" x2="30" y2="20" stroke="#cbd5e1"/>
+              <line x1="30" y1="140" x2="190" y2="95" stroke="#2563eb" stroke-width="3"/>
+              <line x1="30" y1="140" x2="175" y2="70" stroke="#059669" stroke-width="3"/>
+              <path d="M70 128 A40 40 0 0 1 78 108" fill="none" stroke="#7c3aed" stroke-width="2"/>
+              <text x="88" y="118" font-size="12" fill="#6d28d9">θ small</text>
+              <text x="198" y="98" font-size="11" fill="#1d4ed8">A</text>
+              <text x="182" y="66" font-size="11" fill="#047857">B</text>
+              <text x="170" y="28" font-size="12" fill="#0f172a">similar → cos ≈ 1</text>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <table class="compact">
+            <tr><th>Angle θ</th><th>cos(θ)</th><th>Meaning</th></tr>
+            <tr><td>≈ 0°</td><td>≈ 1</td><td>Same direction — very similar</td></tr>
+            <tr><td>90°</td><td>0</td><td>Unrelated axes</td></tr>
+            <tr><td>180°</td><td>−1</td><td>Opposite direction</td></tr>
+          </table>
+          <p class="tiny">Dividing by the lengths (‖A‖ and ‖B‖) means we compare <strong>direction only</strong>, not how long the arrows are.</p>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Dot product A·B = |A||B|cos(θ). Rearrange to isolate cosine. In RAG, “more similar” = larger cosine (or smaller cosine distance, depending on the store).</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 15 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Worked Example (2D)</div>
+      <div class="slide-subtitle">Same three phrases as the graph — now scored</div>
+      <table class="compact">
+        <tr><th>Pair</th><th>Dot product A·B</th><th>Lengths</th><th>cos(θ)</th></tr>
+        <tr>
+          <td>vacation [0.80, 0.20]<br/>annual leave [0.75, 0.28]</td>
+          <td>0.80×0.75 + 0.20×0.28 = <strong>0.656</strong></td>
+          <td>0.825 × 0.801</td>
+          <td><strong>≈ 0.99</strong></td>
+        </tr>
+        <tr>
+          <td>vacation [0.80, 0.20]<br/>dress code [0.10, 0.85]</td>
+          <td>0.80×0.10 + 0.20×0.85 = <strong>0.250</strong></td>
+          <td>0.825 × 0.856</td>
+          <td><strong>≈ 0.35</strong></td>
+        </tr>
+      </table>
+      <div class="good-example">
+        0.99 vs 0.35 — the computer now has a number that matches human intuition: time-off phrases are alike; dress code is a different topic.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Walk the arithmetic slowly. Then say: in 1536-D you do the same — sum of products, divide by lengths. Numpy does it in one line.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 16 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Cosine in Code</div>
+      <div class="slide-subtitle">This is the scoring function behind “find similar chunks”</div>
+      <div class="code-box">import numpy as np
+
+def cosine_similarity(vec1, vec2):
+    return np.dot(vec1, vec2) / (
+        np.linalg.norm(vec1) * np.linalg.norm(vec2)
+    )
+
+sim_time_off = cosine_similarity(
+    sample_embeddings[0], sample_embeddings[1]
+)  # high — both about leave
+
+sim_other = cosine_similarity(
+    sample_embeddings[0], sample_embeddings[2]
+)  # lower — dress code
+
+# Higher similarity = more related content</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Lab prints these two scores. Students should predict high vs low before they run the cell. Chroma uses the same idea internally (sometimes as distance = 1 − cosine).</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 17 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">From One Sentence to a Knowledge Base</div>
+      <div class="slide-subtitle">Embeddings compare meaning. RAG needs <strong>your documents</strong> split into searchable pieces.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 130" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="35" width="140" height="55" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="80" y="68" text-anchor="middle" font-size="13" fill="#1e40af">PDF file</text>
+          <rect x="180" y="35" width="160" height="55" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+          <text x="260" y="68" text-anchor="middle" font-size="13" fill="#5b21b6">Document objects</text>
+          <rect x="370" y="35" width="140" height="55" rx="8" fill="#fef3c7" stroke="#d97706"/>
+          <text x="440" y="68" text-anchor="middle" font-size="13" fill="#92400e">Chunks</text>
+          <rect x="540" y="35" width="140" height="55" rx="8" fill="#dcfce7" stroke="#22c55e"/>
+          <text x="610" y="68" text-anchor="middle" font-size="13" fill="#166534">Embeddings</text>
+          <rect x="710" y="35" width="140" height="55" rx="8" fill="#e0e7ff" stroke="#6366f1"/>
+          <text x="780" y="68" text-anchor="middle" font-size="13" fill="#3730a3">Vector DB</text>
+          <text x="165" y="64" font-size="16" fill="#94a3b8">→</text>
+          <text x="348" y="64" font-size="16" fill="#94a3b8">→</text>
+          <text x="518" y="64" font-size="16" fill="#94a3b8">→</text>
+          <text x="688" y="64" font-size="16" fill="#94a3b8">→</text>
+        </svg>
+      </div>
+      <div class="point"><div class="point-title">Next three topics</div>
+        <div class="point-desc">1) Load a PDF as documents · 2) Chunking strategies · 3) Retrieve similar chunks (then store them in Chroma)</div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Transition: geometry is done. Now the content pipeline. Handbook PDF is the running example in the lab.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 18 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Documents from a PDF</div>
+      <div class="slide-subtitle">A loader turns each page into a LangChain <code>Document</code>: text + metadata</div>
+      <div class="code-box">from langchain_community.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader("employee-handbook.pdf")
+docs = loader.load()
+
+# Document(
+#   page_content="The actual text content",
+#   metadata={"source": "employee-handbook.pdf", "page": 1}
+# )</div>
+      <div class="two-col">
+        <div class="step-card"><h4>page_content</h4><p style="margin:0;color:#475569;">The raw text the embedding model will later see.</p></div>
+        <div class="step-card"><h4>metadata</h4><p style="margin:0;color:#475569;">Source file, page number — used for citations after retrieval.</p></div>
+      </div>
+      <p class="tiny" style="margin-top:0.45rem;">Other loaders: <code>WebBaseLoader</code>, <code>TextLoader</code>, <code>CSVLoader</code>. Same Document shape, different source.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>One PDF page is often still too large and mixed-topic. That is why we split. Metadata survives splitting so answers can say “page 12.”</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 19 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Why Chunk? The Chunking Paradox</div>
+      <div class="slide-subtitle">Too small loses context. Too large mixes topics and dilutes similarity search.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="30" width="200" height="50" rx="6" fill="#fecaca" stroke="#ef4444"/>
+          <text x="110" y="60" text-anchor="middle" font-size="14" fill="#991b1b">Too small</text>
+          <text x="110" y="100" text-anchor="middle" font-size="12" fill="#64748b">Misses context</text>
+          <rect x="260" y="30" width="200" height="50" rx="6" fill="#bbf7d0" stroke="#22c55e"/>
+          <text x="360" y="60" text-anchor="middle" font-size="14" fill="#166534">Just right</text>
+          <text x="360" y="100" text-anchor="middle" font-size="12" fill="#64748b">Coherent + retrievable</text>
+          <rect x="510" y="30" width="200" height="50" rx="6" fill="#fecaca" stroke="#ef4444"/>
+          <text x="610" y="60" text-anchor="middle" font-size="14" fill="#991b1b">Too large</text>
+          <text x="610" y="100" text-anchor="middle" font-size="12" fill="#64748b">Adds noise</text>
+        </svg>
+        <div class="diagram-caption">Goal: large enough to be meaningful, small enough to match one query.</div>
+      </div>
+      <div class="concept-block">
+        If a 4-page chunk mixes vacation, payroll, and parking, a query about vacation gets a weak, noisy vector.
+        If a chunk is half a sentence, the vector has no surrounding policy.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>There is no universal chunk_size. Handbook lab uses 1000 characters / 200 overlap as a practical default.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 20 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Strategy 1 — Size-Based Chunking (No Overlap)</div>
+      <div class="slide-subtitle">Split every N characters. Fast and predictable. Can cut in the middle of a word.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 145" xmlns="http://www.w3.org/2000/svg">
+          <text x="430" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#0f172a">Source: “Employee vacation policy allows 15 days per year.”</text>
+          <rect x="20" y="40" width="820" height="28" rx="4" fill="#e2e8f0"/>
+          <rect x="20" y="85" width="250" height="40" rx="6" fill="#fecaca" stroke="#ef4444"/>
+          <text x="145" y="110" text-anchor="middle" font-size="12" fill="#7f1d1d">“…vacation polic”</text>
+          <rect x="305" y="85" width="250" height="40" rx="6" fill="#fecaca" stroke="#ef4444"/>
+          <text x="430" y="110" text-anchor="middle" font-size="12" fill="#7f1d1d">“y allows 15 days p”</text>
+          <rect x="590" y="85" width="250" height="40" rx="6" fill="#fecaca" stroke="#ef4444"/>
+          <text x="715" y="110" text-anchor="middle" font-size="12" fill="#7f1d1d">“er year.”</text>
+        </svg>
+        <div class="diagram-caption">Zero overlap: each character lives in exactly one chunk. Words like “policy” can split into “polic” / “y”.</div>
+      </div>
+      <p class="tiny">Simple loop: take characters <code>[0:N]</code>, then <code>[N:2N]</code>, then <code>[2N:3N]</code>. No step backward.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Show why retrieval fails if the query is “vacation policy” and those two words were split across chunks.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 21 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Size-Based Chunking — With Overlap</div>
+      <div class="slide-subtitle">Step back by <code>overlap</code> characters so boundary phrases appear in two chunks</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="40" width="680" height="24" rx="4" fill="#e2e8f0"/>
+          <rect x="20" y="40" width="180" height="24" rx="4" fill="#93c5fd" opacity="0.9"/>
+          <rect x="160" y="40" width="180" height="24" rx="4" fill="#60a5fa" opacity="0.9"/>
+          <rect x="300" y="40" width="180" height="24" rx="4" fill="#93c5fd" opacity="0.9"/>
+          <rect x="440" y="40" width="180" height="24" rx="4" fill="#60a5fa" opacity="0.9"/>
+          <rect x="580" y="40" width="120" height="24" rx="4" fill="#93c5fd" opacity="0.9"/>
+          <rect x="160" y="40" width="40" height="24" fill="#fbbf24" opacity="0.65"/>
+          <rect x="300" y="40" width="40" height="24" fill="#fbbf24" opacity="0.65"/>
+          <rect x="440" y="40" width="40" height="24" fill="#fbbf24" opacity="0.65"/>
+          <text x="110" y="56" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunk 1</text>
+          <text x="250" y="56" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunk 2</text>
+          <text x="390" y="56" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunk 3</text>
+          <text x="530" y="56" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunk 4</text>
+          <text x="640" y="56" text-anchor="middle" font-size="11" fill="#1e3a8a">Chunk 5</text>
+          <text x="360" y="88" text-anchor="middle" font-size="11" fill="#64748b">Yellow = overlapping text shared by adjacent chunks</text>
+        </svg>
+      </div>
+      <div class="code-box" style="font-size:11px;">def fixed_size_chunk(text, chunk_size=500, overlap=50):
+    chunks, start = [], 0
+    while start &lt; len(text):
+        chunks.append(text[start:start + chunk_size])
+        start = start + chunk_size - overlap  # step back
+    return chunks</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Overlap duplicates tokens and costs more storage. Typical lab values: size 1000, overlap 200 (20%).</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 22 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Strategy 2 — Recursive Character Splitting</div>
+      <div class="slide-subtitle">Still size-based, but try natural boundaries first. This is what the lab implements.</div>
+      <div class="good-example">
+        Separator hierarchy: <code>\n\n</code> (paragraphs) → <code>\n</code> (lines) → <code>. </code> (sentences) → <code> </code> (words) → raw characters.
+        Only fall back to a harsher split when a piece still exceeds <code>chunk_size</code>.
+      </div>
+      <div class="point">
+        <div class="point-title">LangChain: <code>RecursiveCharacterTextSplitter</code></div>
+        <div class="point-desc"><code>chunk_size=1000</code> · <code>chunk_overlap=200</code> · <code>add_start_index=True</code> (remember offset in the original page)</div>
+      </div>
+      <div class="code-box" style="font-size:11px;">from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000, chunk_overlap=200, add_start_index=True
+)
+all_splits = splitter.split_documents(docs)</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Recommended default for general PDFs. Students should know it is not “semantic chunking” — it is smart size-based splitting.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 23 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Strategy 3 — Document Structure-Aware</div>
+      <div class="slide-subtitle">Split on headings and sections the document already defined</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 130" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="10" width="680" height="110" rx="8" fill="#f1f5f9" stroke="#94a3b8"/>
+          <text x="40" y="32" font-size="13" font-weight="700" fill="#1d4ed8"># Vacation Policy</text>
+          <rect x="30" y="40" width="280" height="28" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="45" y="58" font-size="11" fill="#1e40af">Chunk A — whole H1 section</text>
+          <text x="40" y="88" font-size="12" font-weight="600" fill="#1d4ed8">## Sick Leave</text>
+          <rect x="30" y="94" width="280" height="18" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="45" y="107" font-size="11" fill="#1e40af">Chunk B — H2 section</text>
+          <text x="400" y="32" font-size="12" font-weight="600" fill="#1d4ed8">## Benefits</text>
+          <rect x="390" y="40" width="290" height="28" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="405" y="58" font-size="11" fill="#1e40af">Chunk C — separate section</text>
+        </svg>
+        <div class="diagram-caption">Each chunk stays inside one logical section. Heading metadata helps filtering and citations.</div>
+      </div>
+      <p class="tiny">Example API: <code>MarkdownHeaderTextSplitter</code> with <code>("#", "Header 1")</code>, <code>("##", "Header 2")</code>. Best for Markdown, HTML, well-structured PDFs.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>If the handbook has clear H1/H2, this often beats blind character cuts. Scanned PDFs with no structure cannot use this well.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 24 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Strategy 4 — Semantic Chunking</div>
+      <div class="slide-subtitle">Split where <strong>meaning</strong> shifts, not where a character count is reached</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 95" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="35" width="680" height="22" rx="4" fill="#e2e8f0"/>
+          <rect x="20" y="35" width="220" height="22" rx="4" fill="#a78bfa"/>
+          <rect x="240" y="35" width="260" height="22" rx="4" fill="#34d399"/>
+          <rect x="500" y="35" width="200" height="22" rx="4" fill="#f472b6"/>
+          <line x1="240" y1="22" x2="240" y2="68" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
+          <line x1="500" y1="22" x2="500" y2="68" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
+          <text x="130" y="50" text-anchor="middle" font-size="11" fill="#fff">Topic: vacation</text>
+          <text x="370" y="50" text-anchor="middle" font-size="11" fill="#fff">Topic: sick leave</text>
+          <text x="600" y="50" text-anchor="middle" font-size="11" fill="#fff">Topic: benefits</text>
+          <text x="360" y="88" text-anchor="middle" font-size="11" fill="#64748b">Dashed lines = similarity drop between adjacent sentences</text>
+        </svg>
+      </div>
+      <div class="point">
+        <div class="point-title">How it works</div>
+        <div class="point-desc">Embed each sentence. When cosine similarity between neighboring groups drops below a threshold, start a new chunk. Lengths vary; each chunk tends to be one idea.</div>
+      </div>
+      <p class="tiny">LangChain: <code>SemanticChunker</code> + an embedding model. Slower (many embedding calls). Strong on narrative / mixed-topic prose.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Ironic but useful: you need embeddings to chunk, then you embed the chunks again for the vector store. Lab does not require running this.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 25 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Chunking Strategies — Comparison</div>
+      <div class="slide-subtitle">Choose by document type, not by fashion</div>
+      <table class="compact">
+        <tr><th>Strategy</th><th>Speed</th><th>Respects structure</th><th>Best for</th></tr>
+        <tr><td>Size-based (fixed)</td><td>Fast</td><td>No</td><td>Baselines, uniform text</td></tr>
+        <tr><td>Recursive character</td><td>Fast</td><td>Partially</td><td>General-purpose docs (our lab)</td></tr>
+        <tr><td>Document structure</td><td>Medium</td><td>Yes</td><td>Markdown, HTML, structured PDFs</td></tr>
+        <tr><td>Semantic</td><td>Slower</td><td>By meaning</td><td>Narrative / mixed-topic prose</td></tr>
+      </table>
+      <div class="concept-block">
+        Lab default: recursive splitter, <code>chunk_size=1000</code>, <code>chunk_overlap=200</code>.
+        Good enough to learn retrieval; production systems often mix structure + size limits.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>If asked “which is best?”: it depends. Start recursive; add structure when headings exist; try semantic when topics wander inside paragraphs.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 26 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Retrieval: Find the Right Chunks</div>
+      <div class="slide-subtitle">Embed the question. Compare to stored chunk vectors. Return the best matches.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 115" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="30" width="150" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="95" y="60" text-anchor="middle" font-size="12" fill="#1e40af">User question</text>
+          <rect x="200" y="30" width="150" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+          <text x="275" y="60" text-anchor="middle" font-size="12" fill="#5b21b6">Embed query</text>
+          <rect x="380" y="30" width="220" height="50" rx="8" fill="#fef3c7" stroke="#d97706"/>
+          <text x="490" y="60" text-anchor="middle" font-size="12" fill="#92400e">Score vs all chunk vectors</text>
+          <rect x="630" y="30" width="210" height="50" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="735" y="60" text-anchor="middle" font-size="12" fill="#166534">Return top-k chunks</text>
+          <text x="185" y="58" font-size="14" fill="#94a3b8">→</text>
+          <text x="360" y="58" font-size="14" fill="#94a3b8">→</text>
+          <text x="610" y="58" font-size="14" fill="#94a3b8">→</text>
+        </svg>
+      </div>
+      <div class="three-col">
+        <div class="step-card"><h4>Similarity (top-k)</h4><p style="margin:0;color:#475569;">Always take the k nearest neighbors. Simple default.</p></div>
+        <div class="step-card"><h4>With scores</h4><p style="margin:0;color:#475569;">Same ranking, plus a number so you can see confidence.</p></div>
+        <div class="step-card"><h4>Score threshold</h4><p style="margin:0;color:#475569;">Drop chunks that are not similar enough — even if k is not filled.</p></div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>k=3 is common in the lab. Too small misses supporting paragraphs; too large floods the LLM with noise.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 27 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Similarity Search — Examples</div>
+      <div class="slide-subtitle">Once chunks live in a vector store, search is one call</div>
+      <div class="code-box" style="font-size:11px;">query = "What is the vacation policy?"
+results = vector_store.similarity_search(query, k=3)
+
+# With scores (distance or similarity, depending on backend)
+results_with_scores = vector_store.similarity_search_with_score(
+    "How many sick days do employees get?", k=3
+)
+for doc, score in results_with_scores:
+    print(score, doc.page_content[:200])</div>
+      <div class="point">
+        <div class="point-title">Try several queries</div>
+        <div class="point-desc">Working hours, benefits, dress code — retrieved chunks should change with the question. That is the test that embeddings + chunking are working.</div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Chroma often returns <em>distance</em> (lower = closer). Warn students not to assume “0.9 is always better” without reading the metric docs.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 28 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">The Retriever Abstraction</div>
+      <div class="slide-subtitle">A retriever is a consistent “documents in, query out” interface for chains and agents</div>
+      <div class="code-box" style="font-size:11px;">retriever = vector_store.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 3}
+)
+docs = retriever.invoke("What are the company holidays?")</div>
+      <table class="compact">
+        <tr><th>search_type</th><th>What it does</th></tr>
+        <tr><td><code>similarity</code></td><td>Standard top-k by vector similarity</td></tr>
+        <tr><td><code>mmr</code></td><td>Balance relevance with diversity among the returned chunks</td></tr>
+        <tr><td><code>similarity_score_threshold</code></td><td>Keep only results above a score cutoff</td></tr>
+      </table>
+      <p class="tiny">Batch: <code>retriever.batch([q1, q2, q3])</code> — many questions in one call (offline eval, bulk Q&amp;A).</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Same vector store, different selection policy. MMR is the one students most often misunderstand — next slides go slow.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 29 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Why Top-k Similarity Is Not Enough</div>
+      <div class="slide-subtitle">Nearest neighbors can be near <em>each other</em> — three copies of the same idea</div>
+      <div class="bad-example">
+        <strong>Query:</strong> “What benefits do employees receive?”
+        <br />Similarity search (k=3) might return three near-duplicate health-insurance paragraphs because they all sit next to the query vector.
+      </div>
+      <div class="two-col">
+        <div class="step-card">
+          <h4>What the user needed</h4>
+          <p style="margin:0;color:#475569;">A spread of the benefits landscape: health, retirement, wellness — not the same medical plan three times.</p>
+        </div>
+        <div class="step-card">
+          <h4>What went wrong</h4>
+          <p style="margin:0;color:#475569;">Relevance-only ranking has no memory of “I already picked a chunk like this.”</p>
+        </div>
+      </div>
+      <div class="good-example" style="margin-top:0.5rem;">
+        <strong>MMR (Maximum Marginal Relevance)</strong> picks the next chunk that is relevant to the query <em>and</em> dissimilar to chunks already chosen.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>This is the motivation slide. Do not skip it. MMR exists because redundancy wastes the LLM context window.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 30 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">MMR — The Idea and the Formula</div>
+      <div class="slide-subtitle">Greedy loop: fetch many candidates, then pick k that trade off relevance vs diversity</div>
+      <div class="formula" style="font-size:15px;">
+        MMR(d) = λ · Sim(d, q) − (1 − λ) · max<sub>s ∈ S</sub> Sim(d, s)
+      </div>
+      <table class="compact">
+        <tr><th>Symbol</th><th>Meaning</th></tr>
+        <tr><td><code>q</code></td><td>The user query</td></tr>
+        <tr><td><code>R</code></td><td>Candidate pool (LangChain: <code>fetch_k</code>, e.g. 10)</td></tr>
+        <tr><td><code>S</code></td><td>Chunks already selected (starts empty)</td></tr>
+        <tr><td><code>d</code></td><td>A candidate still in R − S</td></tr>
+        <tr><td>λ (<code>lambda_mult</code>)</td><td><strong>1</strong> = only relevance · <strong>0</strong> = only diversity · <strong>0.5</strong> = balanced</td></tr>
+      </table>
+      <p class="tiny">First pick is always the most similar to the query (S is empty, so the penalty term is 0). Each later pick is penalized if it looks like something already chosen.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Read the minus sign aloud: “relevance bonus minus redundancy penalty.” λ is the mixing knob they will set in code.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 31 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">MMR Worked Example — Setup</div>
+      <div class="slide-subtitle">Query q = “What benefits do employees receive?” · fetch_k = 5 · we want k = 3 · λ = 0.5</div>
+      <table class="compact">
+        <tr><th>ID</th><th>Chunk (topic)</th><th>Sim(d, q)</th></tr>
+        <tr><td><strong>D1</strong></td><td>Health insurance coverage</td><td>0.92</td></tr>
+        <tr><td><strong>D2</strong></td><td>Medical plan deductibles (almost the same as D1)</td><td>0.89</td></tr>
+        <tr><td><strong>D3</strong></td><td>401(k) retirement matching</td><td>0.81</td></tr>
+        <tr><td><strong>D4</strong></td><td>Gym and wellness stipend</td><td>0.76</td></tr>
+        <tr><td><strong>D5</strong></td><td>Dental/vision (still health — close to D1)</td><td>0.88</td></tr>
+      </table>
+      <p class="tiny" style="margin:0.35rem 0;">Pairwise similarity we will need: Sim(D1,D2)=0.95 · Sim(D1,D5)=0.91 · Sim(D1,D3)=0.38 · Sim(D1,D4)=0.42 · Sim(D3,D4)=0.50</p>
+      <div class="warn-example">
+        Pure similarity top-3 would be <strong>D1, D2, D5</strong> — all health. Watch MMR do something different.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Write S = { } on the board. Round 1 has no penalty. Students should shout D1.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 32 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">MMR Worked Example — Rounds 1 and 2</div>
+      <div class="slide-subtitle">λ = 0.5 so each term is half relevance, half “how similar to the closest already-picked chunk”</div>
+      <div class="step-card" style="margin-bottom:0.45rem;">
+        <h4>Round 1 — S is empty</h4>
+        <p style="margin:0;color:#475569;">Penalty is 0. Highest Sim(d,q) wins. <strong>Pick D1</strong> (0.92). Now S = {D1}.</p>
+      </div>
+      <div class="step-card">
+        <h4>Round 2 — MMR(d) = 0.5×Sim(d,q) − 0.5×Sim(d, D1)</h4>
+        <table class="compact" style="margin-top:0.35rem;">
+          <tr><th>d</th><th>0.5 × Sim(d,q)</th><th>− 0.5 × Sim(d,D1)</th><th>MMR</th></tr>
+          <tr><td>D2</td><td>0.445</td><td>−0.475 <span class="tiny">(0.95 with D1)</span></td><td><strong>−0.030</strong></td></tr>
+          <tr><td>D3</td><td>0.405</td><td>−0.190 <span class="tiny">(0.38 with D1)</span></td><td><strong>+0.215</strong></td></tr>
+          <tr><td>D4</td><td>0.380</td><td>−0.210 <span class="tiny">(0.42 with D1)</span></td><td>+0.170</td></tr>
+          <tr><td>D5</td><td>0.440</td><td>−0.455 <span class="tiny">(0.91 with D1)</span></td><td>−0.015</td></tr>
+        </table>
+        <p style="margin:0.35rem 0 0;color:#166534;"><strong>Pick D3</strong> (retirement). D2 and D5 were more relevant to q but too similar to D1 — they were penalized.</p>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Pause on D2: second-highest relevance, worst MMR. That is the whole lesson in one row.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 33 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">MMR Worked Example — Round 3 and Result</div>
+      <div class="slide-subtitle">S = {D1, D3}. Penalty uses the <em>max</em> similarity to anything already selected</div>
+      <div class="step-card" style="margin-bottom:0.45rem;">
+        <h4>Round 3 — MMR(d) = 0.5×Sim(d,q) − 0.5×max(Sim(d,D1), Sim(d,D3))</h4>
+        <table class="compact" style="margin-top:0.35rem;">
+          <tr><th>d</th><th>Relevance half</th><th>Diversity penalty</th><th>MMR</th></tr>
+          <tr><td>D2</td><td>0.445</td><td>−0.475 (still glued to D1)</td><td>−0.030</td></tr>
+          <tr><td>D4</td><td>0.380</td><td>−0.250 (max vs D1/D3 = 0.50)</td><td><strong>+0.130</strong></td></tr>
+          <tr><td>D5</td><td>0.440</td><td>−0.455 (glued to D1)</td><td>−0.015</td></tr>
+        </table>
+        <p style="margin:0.35rem 0 0;color:#166534;"><strong>Pick D4</strong> (wellness).</p>
+      </div>
+      <div class="two-col">
+        <div class="bad-example"><strong>Similarity top-3</strong><br />D1, D2, D5 — health, health, health</div>
+        <div class="good-example"><strong>MMR k=3</strong><br />D1, D3, D4 — health, retirement, wellness</div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Same candidate pool, different selection rule. The LLM now sees three benefit types instead of one. That is why MMR helps RAG answers feel complete.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 34 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">MMR in LangChain</div>
+      <div class="slide-subtitle"><code>fetch_k</code> is the candidate pool · <code>k</code> is what you keep · <code>lambda_mult</code> is λ</div>
+      <div class="code-box" style="font-size:11px;">mmr_retriever = vector_store.as_retriever(
+    search_type="mmr",
+    search_kwargs={
+        "k": 3,           # final number of chunks
+        "fetch_k": 10,    # candidates to rerank with MMR
+        "lambda_mult": 0.5  # 0 = max diversity, 1 = max relevance
+    }
+)
+docs = mmr_retriever.invoke("What benefits do employees receive?")</div>
+      <div class="concept-block">
+        Compare side by side with <code>search_type="similarity"</code> on the same query.
+        If similarity returns near-duplicates and MMR returns different sections, MMR is doing its job.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>If fetch_k equals k, MMR has no room to choose. fetch_k should be clearly larger than k (10 vs 3 in the lab).</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 35 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Storing Vectors in Chroma</div>
+      <div class="slide-subtitle">A vector store persists embeddings and runs fast nearest-neighbor search</div>
+      <div class="two-col">
+        <div class="code-box" style="font-size:11px;white-space:pre-wrap;"># Store phase
+Document → Embedding → Chroma
+
+# Query phase
+Question → Embedding
+        → nearest vectors
+        → original chunks</div>
+        <div>
+          <div class="point"><div class="point-title">Why not a Python list?</div><div class="point-desc">Thousands or millions of chunks need an index, disk persistence, and a search API.</div></div>
+          <div class="point"><div class="point-title">Chroma in the lab</div><div class="point-desc">Local, easy, writes to <code>./chroma_db</code> so you can reuse without re-embedding every time.</div></div>
+        </div>
+      </div>
+      <div class="code-box" style="font-size:11px;">from langchain_community.vectorstores import Chroma
+
+vector_store = Chroma.from_documents(
+    documents=all_splits,
+    embedding=embeddings,
+    persist_directory="./chroma_db"
+)</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p><code>from_documents</code> embeds every chunk, then stores text + vector + metadata. Same <code>embeddings</code> object must be used at query time.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 36 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Chroma: Embedded vs Server</div>
+      <div class="slide-subtitle">Same LangChain API after you have a <code>vector_store</code></div>
+      <table class="compact">
+        <tr><th></th><th>Embedded (lab default)</th><th>Standalone server (optional)</th></tr>
+        <tr><td>Where it runs</td><td>Inside your Python process</td><td>Separate process / Docker on port 8000</td></tr>
+        <tr><td>Disk folder</td><td><code>./chroma_db</code></td><td>e.g. <code>./chroma_server_data</code> — not interchangeable</td></tr>
+        <tr><td>Who uses it</td><td>This notebook</td><td>Many apps can share one collection</td></tr>
+        <tr><td>Connect</td><td><code>persist_directory=...</code></td><td><code>chromadb.HttpClient(host, port)</code></td></tr>
+      </table>
+      <div class="warn-example">
+        Calling <code>from_documents</code> again on an existing collection <strong>appends duplicates</strong>. After the first ingest, reconnect by collection name only.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Optional lab section. Production-shaped: vector DB as its own service. Skip if time is short; similarity search API does not change.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 37 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Retrieval Strategy on the Store</div>
+      <div class="slide-subtitle">Chroma holds the vectors. The retriever chooses <em>how</em> to pick among them.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 140" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="40" width="180" height="60" rx="8" fill="#e0e7ff" stroke="#6366f1"/>
+          <text x="120" y="75" text-anchor="middle" font-size="13" fill="#3730a3">Chroma collection</text>
+          <rect x="280" y="15" width="160" height="40" rx="6" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="360" y="40" text-anchor="middle" font-size="12" fill="#1e40af">similarity k=3</text>
+          <rect x="280" y="65" width="160" height="40" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="360" y="90" text-anchor="middle" font-size="12" fill="#92400e">mmr fetch_k / λ</text>
+          <rect x="280" y="115" width="160" height="22" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="360" y="130" text-anchor="middle" font-size="11" fill="#166534">score threshold</text>
+          <rect x="520" y="40" width="310" height="60" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+          <text x="675" y="65" text-anchor="middle" font-size="13" fill="#334155">Same documents, different</text>
+          <text x="675" y="84" text-anchor="middle" font-size="13" fill="#334155">subsets sent to the LLM</text>
+        </svg>
+      </div>
+      <div class="concept-block">
+        Indexing quality (chunking + embedding model) sets the ceiling.
+        Retrieval strategy decides which of those chunks actually reach the prompt.
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Tie-back: students now have store + policy. Last section is how generation is wired — always retrieve vs let an agent decide.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 38 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Traditional RAG — Always Retrieve, Then Generate</div>
+      <div class="slide-subtitle">Fixed pipeline: every question triggers search, then one LLM call with that context</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="15" y="25" width="150" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="90" y="55" text-anchor="middle" font-size="12" fill="#1e40af">User question</text>
+          <rect x="195" y="25" width="190" height="50" rx="8" fill="#fef3c7" stroke="#d97706"/>
+          <text x="290" y="55" text-anchor="middle" font-size="12" fill="#92400e">Always retrieve k chunks</text>
+          <rect x="415" y="25" width="200" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+          <text x="515" y="55" text-anchor="middle" font-size="12" fill="#5b21b6">Inject into system prompt</text>
+          <rect x="645" y="25" width="200" height="50" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="745" y="55" text-anchor="middle" font-size="12" fill="#166534">Single LLM call</text>
+        </svg>
+      </div>
+      <div class="three-col">
+        <div class="step-card"><h4>Faster</h4><p style="margin:0;color:#475569;">Usually one model call per question.</p></div>
+        <div class="step-card"><h4>Predictable</h4><p style="margin:0;color:#475569;">No tool-choice. Search always happens.</p></div>
+        <div class="step-card"><h4>Cheaper</h4><p style="margin:0;color:#475569;">Fewer tokens spent on “should I search?”</p></div>
+      </div>
+      <p class="tiny" style="margin-top:0.5rem;">Limitation: cannot skip retrieval for “hello”, and cannot run two different searches on its own for a comparison question.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Lab implements this with LangChain middleware: <code>@dynamic_prompt</code> runs similarity_search, then returns a system message that already contains handbook pages.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 39 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Traditional RAG — Middleware Pattern (Lab)</div>
+      <div class="slide-subtitle">Context is fetched immediately before the model runs, then stuffed into the system prompt</div>
+      <div class="code-box" style="font-size:11px;">@dynamic_prompt
+def prompt_with_context(request: ModelRequest) -&gt; str:
+    last_query = request.state["messages"][-1].content
+    retrieved_docs = vector_store.similarity_search(last_query, k=3)
+    docs_content = "\n\n---\n\n".join(
+        f"Page {doc.metadata.get('page')}:\n{doc.page_content}"
+        for doc in retrieved_docs
+    )
+    return (
+        "You are an HR assistant. Use this handbook context.\n"
+        "If it is missing, say you do not have it.\n\n"
+        f"Context:\n{docs_content}"
+    )
+
+rag_pipeline = create_agent(llm, tools=[], middleware=[prompt_with_context])</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>tools=[] is intentional: retrieval is not a tool the model chooses; middleware always injects context. Greeting still retrieves (wasted search) — that is the tradeoff.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 40 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Agentic RAG — The Model Decides When to Search</div>
+      <div class="slide-subtitle">Retriever becomes a <strong>tool</strong>. The agent may call it zero, one, or many times.</div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 125" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="35" width="130" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+          <text x="85" y="65" text-anchor="middle" font-size="12" fill="#1e40af">User question</text>
+          <rect x="180" y="20" width="200" height="80" rx="8" fill="#fee2e2" stroke="#ef4444"/>
+          <text x="280" y="50" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">Agent (LLM)</text>
+          <text x="280" y="70" text-anchor="middle" font-size="11" fill="#b91c1c">call tool? or answer?</text>
+          <rect x="420" y="20" width="200" height="80" rx="8" fill="#fef3c7" stroke="#d97706"/>
+          <text x="520" y="48" text-anchor="middle" font-size="12" fill="#92400e">retrieve_handbook(q)</text>
+          <text x="520" y="68" text-anchor="middle" font-size="11" fill="#b45309">may run multiple times</text>
+          <rect x="650" y="35" width="190" height="50" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="745" y="65" text-anchor="middle" font-size="12" fill="#166534">Final answer</text>
+        </svg>
+      </div>
+      <div class="point"><div class="point-title">Typical loop</div>
+        <div class="point-desc">1) Read the question · 2) Decide whether the handbook is needed · 3) Search (maybe twice: sick leave, then vacation) · 4) Combine evidence and answer.</div>
+      </div>
+      <p class="tiny">Cost: more LLM calls and higher latency. Benefit: greetings skip search; comparison questions can retrieve twice.</p>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Demo in lab: vacation policy (one tool call), sick vs vacation (two calls), “Hello” (zero calls). That three-way contrast is the teaching payoff.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 41 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Agentic RAG — Tool + Agent (Lab)</div>
+      <div class="slide-subtitle">The tool wraps <code>similarity_search</code>. The system prompt says when to use it.</div>
+      <div class="code-box" style="font-size:11px;">@tool
+def retrieve_employee_handbook(query: str):
+    """Search the employee handbook for policies, benefits, time off..."""
+    retrieved_docs = vector_store.similarity_search(query, k=3)
+    return "\n\n".join(
+        f"Source (Page {doc.metadata.get('page')}):\n{doc.page_content}"
+        for doc in retrieved_docs
+    )
+
+agent = create_agent(llm, [retrieve_employee_handbook],
+                     system_prompt="You are an HR assistant. Use the tool
+                     for handbook questions. Greetings need no tool.")</div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Tool docstring matters: the model uses it to decide. A vague docstring → random tool use. Stream events so students see the thought/tool/answer sequence.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 42 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Traditional vs Agentic RAG</div>
+      <div class="slide-subtitle">Same vector store. Different control over retrieval.</div>
+      <table class="compact">
+        <tr><th></th><th>Traditional (middleware pipeline)</th><th>Agentic (retrieval tool)</th></tr>
+        <tr><td>When it searches</td><td>Always, before the answer</td><td>Only if the agent chooses the tool</td></tr>
+        <tr><td>How many searches</td><td>One (per query embedding)</td><td>Zero, one, or several</td></tr>
+        <tr><td>LLM calls</td><td>Typically 1</td><td>2+ (decide + answer, extra if more tools)</td></tr>
+        <tr><td>Latency / cost</td><td>Lower</td><td>Higher</td></tr>
+        <tr><td>“Hello, how are you?”</td><td>Still retrieves handbook</td><td>Can reply without search</td></tr>
+        <tr><td>“Sick leave vs vacation”</td><td>One mixed retrieval</td><td>Can search twice, then compare</td></tr>
+        <tr><td>Best when</td><td>Every question is about the corpus</td><td>Mixed chat + multi-hop questions</td></tr>
+      </table>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>There is no single winner. Handbook FAQ bot → traditional. Assistant that also chats and compares policies → agentic. Both share indexing, embeddings, Chroma, and retrievers.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 43 -->
+  <div class="page">
+    <div class="slide-content">
+      <div class="slide-title">Full Picture Recap</div>
+      <div class="slide-subtitle">Every later box depends on “strings became vectors with meaning”</div>
+      <div class="two-col">
+        <div>
+          <div class="point"><div class="point-title">1. Geometry</div><div class="point-desc">Arrays in [−1,1] · points · arrows from origin · vectors (magnitude + direction)</div></div>
+          <div class="point"><div class="point-title">2. Embedding model</div><div class="point-desc">Learns patterns; maps features to indexes; output = embedding</div></div>
+          <div class="point"><div class="point-title">3. Cosine</div><div class="point-desc">Score = alignment of two arrows</div></div>
+          <div class="point"><div class="point-title">4. Documents &amp; chunks</div><div class="point-desc">PDF → Document · size / recursive / structure / semantic</div></div>
+        </div>
+        <div>
+          <div class="point"><div class="point-title">5. Retrieve</div><div class="point-desc">Top-k similarity, scores, threshold, <strong>MMR</strong> for diversity</div></div>
+          <div class="point"><div class="point-title">6. Chroma</div><div class="point-desc">Persist vectors; search at query time</div></div>
+          <div class="point"><div class="point-title">7. Generate</div><div class="point-desc">Traditional: always inject context · Agentic: tool-use loop</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>If time remains, ask a student to explain MMR in one sentence, another to contrast the two RAG styles.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 44 -->
+  <div class="page">
+    <div class="slide-content" style="text-align: center; padding-top: 1.6rem;">
+      <div class="slide-title" style="font-size: 24px; border: none;">One-Sentence Takeaway</div>
+      <div class="good-example" style="text-align: left; margin-top: 1.4rem; font-size: 16px; line-height: 1.5;">
+        Convert text to vectors with an embedding model, compare them with cosine, store chunks in a vector database,
+        retrieve with a strategy (similarity or MMR), then either <strong>always</strong> stuff context into one prompt
+        or let an <strong>agent</strong> decide when — and how often — to search.
+      </div>
+      <div class="slide-subtitle" style="margin-top: 1.4rem;">Next: hands-on lab <code>09-rag.html</code> · notebook <code>09-rag.ipynb</code></div>
+    </div>
+    <div class="speaker-notes">
+      <div class="speaker-notes-title">Notes</div>
+      <p>Point them at the lab order: load PDF → split → embed + cosine demo → Chroma → similarity → retrievers/MMR → agent → middleware pipeline.</p>
+    </div>
+  </div>
+
+  <p class="end-marker" style="text-align: center; color: #94a3b8; font-size: 16px; margin-top: 1rem;">— End —</p>
+</main>
+
+<div class="slide-nav" id="slideNav" style="display: none;">
+  <span id="slideNum">1</span> / <span id="slideTotal">44</span>
+  <span style="margin-left: 1rem;"><kbd>←</kbd> <kbd>→</kbd> <kbd>Space</kbd> Navigate</span>
+  <span style="margin-left: 0.5rem;"><kbd>F</kbd> Fullscreen</span>
+  <span style="margin-left: 0.5rem;"><kbd>P</kbd> Presentation</span>
+</div>
+
+<script>
+(function() {
+  var pages = document.querySelectorAll('.page');
+  var total = pages.length;
+  var current = 0;
+  var presentationMode = false;
+
+  function showSlide(i) {
+    current = Math.max(0, Math.min(i, total - 1));
+    pages.forEach(function(p, idx) { p.classList.toggle('active', idx === current); });
+    document.getElementById('slideNum').textContent = current + 1;
+  }
+
+  function togglePresentation() {
+    presentationMode = !presentationMode;
+    document.body.classList.toggle('presentation-mode', presentationMode);
+    document.getElementById('slideNav').style.display = presentationMode ? 'block' : 'none';
+    if (presentationMode) {
+      showSlide(0);
+      document.querySelector('.header').style.display = 'none';
+    } else {
+      document.querySelector('.header').style.display = '';
+    }
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (presentationMode) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (presentationMode) showSlide(current - 1);
+    } else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(function() {
+          if (!presentationMode) togglePresentation();
+        }).catch(function() {});
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) document.exitFullscreen();
+    } else if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      togglePresentation();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', function() {
+    if (!document.fullscreenElement && presentationMode) {
+      togglePresentation();
+    }
+  });
+
+  document.getElementById('slideTotal').textContent = total;
+})();
+</script>
+</body>
+</html>

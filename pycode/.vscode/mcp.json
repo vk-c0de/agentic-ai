@@ -1,0 +1,12 @@
+{
+  "servers": {
+    
+    "DatabaseServer": {
+      "type": "stdio",
+      "command": "C:\\Users\\localadmin\\Desktop\\vijay\\pycode\\mcpvenv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\localadmin\\Desktop\\vijay\\pycode\\mcpdemo\\03-DatabaseServer.py"
+      ]
+    }
+  }
+}
